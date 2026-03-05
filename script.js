@@ -3,7 +3,7 @@ let wordSquares = [];
 
 async function fetchJSONData() {
   try {
-    const response = await fetch('./three-letter-words.json');
+    const response = await fetch('./wordlists/three-letter-words.json');
 
     // Check if the request was successful
     if (!response.ok) { throw new Error(`HTTP error! Status: ${response.status}`); }
@@ -82,7 +82,7 @@ function createWordSquare() {
 
     for (let word of wordList) {
       board[row] = word.split('');
-      let validWS = true;
+      let validWordSquare = true;
 
       for (let col = 0; col < 3; col++) {
         let prefix = '';
@@ -90,12 +90,12 @@ function createWordSquare() {
           prefix += board[r][col];
         }
         if (!trie.startsWith(prefix)) {
-          validWS = false;
+          validWordSquare = false;
           break;
         }
       }
 
-      if (validWS) {
+      if (validWordSquare) {
         backtrack(row + 1);
       }
     }
@@ -112,11 +112,13 @@ var currentSquare = [];
 document.getElementById('generateButton').addEventListener('click', () => {
   console.log("Possible word squares:", wordSquares.length);
   const randomIndex = Math.floor(Math.random() * wordSquares.length);
-  solutionSquare = wordSquares[randomIndex];
-  console.log("Solution:", solutionSquare);
+  
   currentSquare = wordSquares[randomIndex];
   currentSquare = currentSquare.map(line => line.replace(/\s/g, '').split('')); //Remove spaces and 
   
+  solutionWords = pullWords(currentSquare);
+  console.log("Solution:", solutionWords);
+
   currentSquare = shuffleWordSquare(currentSquare); //Shuffle the word square to create a new configuration
 
   cells.forEach((cell, index) => {
@@ -124,12 +126,13 @@ document.getElementById('generateButton').addEventListener('click', () => {
     const cellCol = index % 3; //Calculate the column index for the current cell
     cell.innerText = currentSquare[cellRow][cellCol];
   });
+  determineColor(currentSquare); //Determine the colors of the cells based on the current configuration
 });
+
 
 const shifts = document.querySelectorAll('.shift');
 shifts.forEach(button => {
   button.addEventListener('click', () => {
-    console.log("Before:", currentSquare);
     const cellInfo = button.id.split('-'); //Extract the column index from the button ID 
     
     const indexVal = parseInt(cellInfo[0]);
@@ -165,6 +168,7 @@ shifts.forEach(button => {
         const cellCol = index % 3;
         cell.innerText = currentSquare[cellRow][cellCol];
     });
+    determineColor(currentSquare);
   });
 });
 
@@ -212,4 +216,65 @@ function shuffleWordSquare(square) {
     }
   }
   return shuffledSquare;
+}
+
+function determineColor(square) {
+  const words = pullWords(square);
+  console.log("Current words:", words, words.length);
+  clearColors(); //Reset colors before determining new colors
+  for (let i = 0; i < words.length; i++) {
+    if (solutionWords[i] === words[i]) {
+      assignColors(i, '#93c47d'); //Green for correct words in the correct position
+    } else if (solutionWords.includes(words[i])) {
+      assignColors(i, '#ffd966'); //Yellow for correct words in the wrong position
+    } else if (wordList.includes(words[i])) {
+      assignColors(i, '#e06666'); //Red for valid words not present in the puzzle
+    }
+  };
+}
+
+function assignColors(index, color) {
+  for (let j = 0; j < 3; j++) {    
+    if (index % 2 === 1) {
+      var cellCol = j; 
+      var cellRow = Math.floor(index / 2); 
+    } else {
+      var cellCol = Math.floor(index / 2); 
+      var cellRow = j;
+    }
+    
+    const cellIndex = cellRow * 3 + cellCol; //Calculate the cell index based on row & column
+
+    //Color priority Green > Yellow > Red. A cell will only change color if the new color has higher priority than the current color.
+    if (cells[cellIndex].style.backgroundColor === '#93c47d') {
+      continue; //Skip if the cell is already green
+    } else if (color === '#ffd966' && cells[cellIndex].style.backgroundColor !== '#93c47d') {
+      cells[cellIndex].style.backgroundColor = color; //Assign yellow if not already green
+    } else if (color === '#e06666' && cells[cellIndex].style.backgroundColor === 'white') {
+      cells[cellIndex].style.backgroundColor = color; //Assign red if not already green or yellow
+    } else if (color === '#93c47d') {
+      cells[cellIndex].style.backgroundColor = color; //Assign green regardless of current color
+    }
+  }
+}
+
+function clearColors() {
+  cells.forEach(cell => {
+    cell.style.backgroundColor = 'white';
+  });
+}
+
+function pullWords(square) {
+  var words = []; 
+  //Combine each column or row into a word
+  for (let col = 0; col < 3; col++) {
+    let columnWord = '', rowWord = '';
+    for (let row = 0; row < 3; row++) {
+      columnWord += square[row][col];
+      rowWord += square[col][row];
+    }
+    words.push(columnWord);
+    words.push(rowWord);
+  }
+  return words;
 }
