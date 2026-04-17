@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shikaku</title>
+    <link rel="stylesheet" href="../Shikaku/assets/css/shikaku.css">
+</head>
+<body>
+  <h1>Shikaku</h1>
+  <select>Size
+    <option onclick="createGrid(5)">5x5</option>
+    <option onclick="createGrid(7)">7x7</option>
+    <option onclick="createGrid(10)">10x10</option>
+    <option onclick="createGrid(20)">20x20</option>
+  </select>
+  <button id="generateButton" onclick="createGrid(0)">Clear</button> <br>
+  <div id="gameBoard"></div>
+  <script src="../Shikaku/assets/js/shikaku.js"></script>
+</body>
+</html>
