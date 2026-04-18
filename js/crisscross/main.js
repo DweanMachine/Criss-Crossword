@@ -3,14 +3,14 @@ let wordSquares = [];
 
 async function fetchJSONData() {
   try {
-    const response = await fetch('../wordlists/three-letter-words.json');
+    const response = await fetch('../wordlists/four-letter-words.json');
 
     // Check if the request was successful
     if (!response.ok) { throw new Error(`HTTP error! Status: ${response.status}`); }
 
     //Parse the response body as JSON
     wordList = await response.json(); 
-    createWordSquare();
+    //createWordSquare();
 
   } catch (error) {
     console.error('Error fetching JSON:', error);
@@ -20,88 +20,14 @@ async function fetchJSONData() {
 //Call the function
 fetchJSONData();
 
-class TrieNode {
-  constructor() {
-    this.children = {};
-    this.isEnd = false;
-  }
-}
+const worker = new Worker('../Criss-Crossword/assets/js/worker.js');
 
-class Trie {
-  constructor() {
-    this.root = new TrieNode();
-  }
+worker.onmessage = ({ data: squares }) => {
+  console.log(`Found ${squares.length} word squares`);
+  // render results...
+};
 
-  insert(word) {
-    let node = this.root;
-    for (let char of word) {
-      if (!node.children[char]) {
-        node.children[char] = new TrieNode();
-      }
-      node = node.children[char];
-    }
-    node.isEnd = true;
-  }
-
-  search(word) {
-    let node = this.root;
-    for (let char of word) {
-      if (!node.children[char]) {
-        return false;
-      }
-      node = node.children[char];
-    }
-    return node.isEnd;
-  }
-
-  startsWith(prefix) {
-    let node = this.root;
-    for (let char of prefix) {
-      if (!node.children[char]) {
-        return false;
-      }
-      node = node.children[char];
-    }
-    return true;
-  }
-}
-
-function createWordSquare() {
-  const trie = new Trie();
-  for (let word of wordList) {
-    trie.insert(word);
-  }
-
-  const board = Array(3).fill().map(() => Array(3).fill(''));
-
-  function backtrack(row) { 
-    if (row === 3) {
-      wordSquares.push(board.map(r => r.join('')));
-      return;
-    }
-
-    for (let word of wordList) {
-      board[row] = word.split('');
-      let validWordSquare = true;
-
-      for (let col = 0; col < 3; col++) {
-        let prefix = '';
-        for (let r = 0; r <= row; r++) {
-          prefix += board[r][col];
-        }
-        if (!trie.startsWith(prefix)) {
-          validWordSquare = false;
-          break;
-        }
-      }
-
-      if (validWordSquare) {
-        backtrack(row + 1);
-      }
-    }
-  }
-  backtrack(0); //Start backtracking from the first row
-}
+worker.postMessage('../wordlists/four-letter-words.json');
 
 const outputspan = document.getElementById('output');
 
@@ -122,8 +48,8 @@ document.getElementById('generateButton').addEventListener('click', () => {
   currentSquare = shuffleWordSquare(currentSquare); //Shuffle the word square to create a new configuration
 
   cells.forEach((cell, index) => {
-    const cellRow = Math.floor(index / 3); //Calculate the row index for the current cell
-    const cellCol = index % 3; //Calculate the column index for the current cell
+    const cellRow = Math.floor(index / 4); //Calculate the row index for the current cell
+    const cellCol = index % 4; //Calculate the column index for the current cell
     cell.innerText = currentSquare[cellRow][cellCol];
   });
   determineColor(currentSquare); //Determine the colors of the cells based on the current configuration
@@ -164,8 +90,8 @@ shifts.forEach(button => {
       return;
     }
     cells.forEach((cell, index) => {
-        const cellRow = Math.floor(index / 3);
-        const cellCol = index % 3;
+        const cellRow = Math.floor(index / 4);
+        const cellCol = index % 4;
         cell.innerText = currentSquare[cellRow][cellCol];
     });
     determineColor(currentSquare);
@@ -180,7 +106,7 @@ function shuffleWordSquare(square) {
   const shuffleCount = Math.floor(Math.random() * 5) + 10; //Random number of shuffles between 10 and 15
 
   for (let i = 0; i < shuffleCount; i++) {
-    const index = Math.floor(Math.random() * 3); //Randomly select a row or column index
+    const index = Math.floor(Math.random() * 4); //Randomly select a row or column index
 
     if (Math.random() < 0.5) { //if < 0.5, shuffle a row; if >= 0.5, shuffle a column
       //Shuffle row
@@ -215,7 +141,7 @@ function determineColor(square) {
 }
 
 function assignColors(index, color) {
-  for (let j = 0; j < 3; j++) {    
+  for (let j = 0; j < 4; j++) {    
     if (index % 2 === 1) {
       var cellCol = j; 
       var cellRow = Math.floor(index / 2); 
@@ -248,9 +174,9 @@ function clearColors() {
 function pullWords(square) {
   var words = []; 
   //Combine each column or row into a word
-  for (let col = 0; col < 3; col++) {
+  for (let col = 0; col < 4; col++) {
     let columnWord = '', rowWord = '';
-    for (let row = 0; row < 3; row++) {
+    for (let row = 0; row < 4; row++) {
       columnWord += square[row][col];
       rowWord += square[col][row];
     }
